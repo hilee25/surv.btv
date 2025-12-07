@@ -1,8 +1,13 @@
 # surv.btv
-R package: Time-Dependent Binary Covariate Tools for Survival Analysis
-> 시간 종속 이진 공변량이 생존에 미치는 영향을 평가하기 위한 R 함수 세트  
-> (랜드마크 분석, Mantel–Byar 검정, Cox 모형 적합 및 시각화)
+> R package: Time-Dependent Binary Covariate Tools for Survival Analysis  
+> 시간 종속 이진 공변량이 생존에 미치는 영향 평가(Landmark 분석, Mantel–Byar 검정, Simon-Makuch 곡선, Cox 모형 적합 및 시각화)
 
+- 패키지 설치 및 사용 코드 in R
+  ```r
+  devtools::install_github("hilee25/surv.btv")
+  library(surv.btv)
+  ```
+  
 ---
 
 ## 환경
@@ -17,7 +22,7 @@ R package: Time-Dependent Binary Covariate Tools for Survival Analysis
   install.packages(c("survival","dplyr","tibble","purrr","ggplot2","patchwork","survminer"))
   ```
 
-## 함수 요약
+## 사용자 정의 함수
 | 함수명                    | 설명                                              |
 | :--------------------- | :---------------------------------------------- |
 | `make_cp_from_dates()` | Counting process 자료 변환 함수 |
