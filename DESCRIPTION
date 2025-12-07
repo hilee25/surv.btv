@@ -1,0 +1,19 @@
+Package: surv.btv
+Title: Time-Dependent Binary Covariate Tools for Survival Analysis
+Version: 0.1.0
+Authors@R: 
+    person("Haein", "Lee", email = "lhi1495@naver.com", role = c("aut", "cre"))
+Description: Tools for landmark analysis, Mantel-Byar test,
+    Simon-Makuch curve plots, and time-dependent Cox models for binary covariates.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Imports:
+    survival,
+    dplyr,
+    ggplot2,
+    purrr,
+    tibble,
+    patchwork,
+    survminer
