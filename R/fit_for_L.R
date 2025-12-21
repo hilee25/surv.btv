@@ -49,18 +49,20 @@ fit_for_L <- function(cp_df, L, robust = TRUE) {
   }
 
   s  <- summary(fit)
-  hr <- unname(exp(coef(fit))[1])  # HR
-  ci <- unname(exp(confint(fit))[1, ])  # 95% CI
+  hr <- as.numeric(unname(exp(coef(fit))[1]))  # HR
+  ci <- as.numeric(unname(exp(confint(fit))[1, ]))  # 95% CI
   p  <- as.numeric(s$sctest[3])  # Score test p-value
+
+  n_group <- table(dplyr::distinct(postL, id, Z_L)$Z_L) |> unclass()
 
   list(
     L        = L,
     n_total  = n_distinct(postL$id),
     n_events = sum(postL$event),
-    n_group  = table(distinct(postL, id, Z_L)$Z_L) |> unclass(),
-    hr       = as.numeric(hr),
-    ci_low   = as.numeric(ci[1]),
-    ci_high  = as.numeric(ci[2]),
+    n_group  = n_group,
+    hr       = hr,
+    ci_low   = ci[1],
+    ci_high  = ci[2],
     p        = p,
     fit      = fit
   )
