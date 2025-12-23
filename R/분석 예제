@@ -1,0 +1,158 @@
+library(survival); library(dplyr); library(ggplot2); library(purrr); library(tibble); library(patchwork); library(survminer)
+options(scipen = 999) # 지수표기 억제
+
+# =========================================================
+# example 1: jasa data
+# =========================================================
+jasa <- survival::jasa
+
+## (3.2) 카운팅 프로세스 변환
+cp <- make_cp_from_dates(
+  data = jasa,
+  accept_col = "accept.dt",
+  tx_col     = "tx.date",
+  fu_col     = "fu.date",
+  status_col = "fustat",
+  eps = 1e-5,
+  fix_zero_followup = "bump"
+)
+
+## (3.3.1) 불사시간 편향의 확인
+km_fit <- survfit(
+  Surv(futime, fustat) ~ transplant,
+  data = jasa
+)
+km_fit
+
+plot(km_fit,
+     col = c("blue", "red"),
+     lty = 1:2,
+     xlab = "Time (days)",
+     ylab = "Survival")
+
+legend("topright",
+       legend = c("No transplant", "Transplant"),
+       col = c("blue", "red"),
+       lty = 1:2)
+
+lr_test <- survdiff(
+  Surv(futime, fustat) ~ transplant,
+  data = jasa
+)
+lr_test
+
+p_lr <- 1 - pchisq(lr_test$chisq, df = 1)
+p_lr
+
+## (3.3.2) Mantel-Byar 검정과 시간가변 Cox 모형
+# Mantel-Byar 검정 수행
+mb_result <- mantel_byar_cp(cp, ref_val = 0)
+print(mb_result$chisq)
+print(mb_result$p)
+
+# 시간가변 Cox 모형 적합 및 비례위험 가정 검정
+fit_tdcox <- coxph(Surv(tstart, tstop, event) ~ response, data = cp)
+summary(fit_tdcox)
+
+test_ph <- cox.zph(fit_tdcox)
+print(test_ph)
+
+## (3.4) 랜드마크 분석과 다중 민감도 분석
+# 단일 랜드마크(예: 60일)
+result_60 <- fit_for_L(cp, L = 60, robust = TRUE)
+
+cat(sprintf("60일 랜드마크: HR=%.2f (95%% CI: %.2f-%.2f), cox p=%.3f\n",
+            result_60$hr, result_60$ci_low, result_60$ci_high, result_60$p))
+
+
+# 다중 랜드마크 + 시각화
+res_plot <- plot_all_landmarks(
+  cp_df = cp,
+  landmarks = c(30, 60, 90, 120),
+  robust = TRUE,
+  conf_int = FALSE
+)
+print(res_plot$plot) # 패널 그래프
+print(res_plot$table) # 요약 테이블
+
+
+# =========================================================
+# example 2: mgus data
+# =========================================================
+mgus <- survival::mgus
+
+## (4.1) 자료 개요 및 불사시간 편향의 확인 
+mgus$prog <- factor(
+  ifelse(is.na(mgus$pctime), "No progression", "Progression"),
+  levels = c("No progression", "Progression")
+)
+table(mgus$prog)
+
+km_fit_mgus <- survfit(
+  Surv(futime, death) ~ prog,
+  data = mgus
+)
+km_fit_mgus
+
+plot(km_fit_mgus,
+     col = c("blue", "red"),
+     lty = 1:2,
+     xlab = "Time",
+     ylab = "Survival")
+
+legend("topright",
+       legend = levels(mgus$prog),
+       col = c("blue", "red"),
+       lty = 1:2)
+
+
+lr_test_mgus <- survdiff(
+  Surv(futime, death) ~ prog,
+  data = mgus
+)
+lr_test_mgus
+
+p_lr_mgus <- 1 - pchisq(lr_test_mgus$chisq, df = 1)
+p_lr_mgus
+
+## (4.2) 카운팅 프로세스 변환 및 전체기간 기반 분석
+
+# 가상의 기준 시점 설정
+mgus$accept_date <- as.Date("2000-01-01") # baseline date
+mgus$tx_date     <- mgus$accept_date + mgus$pctime
+mgus$fu_date     <- mgus$accept_date + mgus$futime
+
+# 날짜 기반 원자료를 counting process 형식으로 변환
+cp_mgus <- make_cp_from_dates(
+  data = mgus,
+  accept_col = "accept_date",
+  tx_col     = "tx_date",
+  fu_col     = "fu_date",
+  status_col = "death",
+  eps = 1e-8,
+  fix_zero_followup = "bump"
+)
+
+# Mantel-Byar 검정 수행
+mb_result_mgus <- mantel_byar_cp(cp_mgus, ref_val = 0)
+print(mb_result_mgus$chisq)
+print(mb_result_mgus$p)
+
+# 시간가변 Cox 모형 적합 및 비례위험 가정 검정
+fit_tdcox_mgus <- coxph(Surv(tstart, tstop, event) ~ response, data = cp_mgus)
+summary(fit_tdcox_mgus)
+
+test_ph_mgus <- cox.zph(fit_tdcox_mgus)
+print(test_ph_mgus)
+  
+## (4.3) Simon-Makuch 곡선 및 다중 랜드마크 요약
+# 다중 랜드마크 예: 5년(1825일), 10년(3650일)
+res_plot_mgus <- plot_all_landmarks(
+  cp_df = cp_mgus,
+  landmarks = c(1825, 3650),
+  robust = TRUE,
+  conf_int = FALSE
+)
+
+print(res_plot_mgus$plot) # 패널 그래프
+print(res_plot_mgus$table) # 요약 테이블
